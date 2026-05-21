@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LevCalc" />
+  <title>LevCalc</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f0f0f;
+      --surface:  #181818;
+      --border:   #2a2a2a;
+      --text:     #e0e0e0;
+      --muted:    #666;
+      --mono:     'DM Mono', monospace;
+      --sans:     'DM Sans', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 24px 20px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .header {
+      margin-bottom: 32px;
+    }
+
+    .title {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .fields {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 2px;
+    }
+
+    .field {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: border-color 0.15s;
+    }
+
+    .field:focus-within {
+      border-color: #444;
+    }
+
+    .field-label {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      font-weight: 400;
+      min-width: 110px;
+    }
+
+    .field input {
+      background: none;
+      border: none;
+      outline: none;
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      text-align: right;
+      width: 100%;
+      caret-color: var(--text);
+    }
+
+    .field input::placeholder {
+      color: #3a3a3a;
+    }
+
+    .field .unit {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      padding-left: 6px;
+    }
+
+    .divider {
+      height: 16px;
+    }
+
+    .result-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 20px 16px;
+      margin-top: 2px;
+    }
+
+    .result-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+
+    .result-row + .result-row {
+      border-top: 1px solid var(--border);
+    }
+
+    .result-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .result-value {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .result-value.big {
+      font-size: 28px;
+      font-weight: 400;
+    }
+
+    .result-value.empty {
+      color: #333;
+    }
+
+    .fee-note {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #3a3a3a;
+      text-align: center;
+      font-family: var(--mono);
+      letter-spacing: 0.05em;
+    }
+
+    /* iOS safe area */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      body { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="title">Leverage Calculator</div>
+    </div>
+
+    <div class="fields">
+      <div class="field">
+        <span class="field-label">Balance</span>
+        <input type="number" id="balance" inputmode="decimal" placeholder="0.00" step="any" />
+        <span class="unit">USDT</span>
+      </div>
+      <div class="field">
+        <span class="field-label">Risk Amount</span>
+        <input type="number" id="risk" inputmode="decimal" placeholder="0.00" step="any" />
+        <span class="unit">USDT</span>
+      </div>
+      <div class="field">
+        <span class="field-label">Stop Loss</span>
+        <input type="number" id="sl" inputmode="decimal" placeholder="0.00" step="any" />
+        <span class="unit">%</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="result-block">
+      <div class="result-row">
+        <span class="result-label">Leverage</span>
+        <span class="result-value big" id="out-leverage">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Position Size</span>
+        <span class="result-value" id="out-position">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Max Loss incl. fees</span>
+        <span class="result-value" id="out-maxloss">—</span>
+      </div>
+    </div>
+
+    <div class="fee-note">fee 0.05% × 2 sides = 0.10% included</div>
+  </div>
+
+  <script>
+    const TAKER_FEE = 0.0005; // 0.05% per side
+    const TOTAL_FEE_RATE = TAKER_FEE * 2; // 0.10% round trip
+
+    const fBalance  = document.getElementById('balance');
+    const fRisk     = document.getElementById('risk');
+    const fSl       = document.getElementById('sl');
+    const outLev    = document.getElementById('out-leverage');
+    const outPos    = document.getElementById('out-position');
+    const outLoss   = document.getElementById('out-maxloss');
+
+    // Load saved balance
+    const savedBalance = localStorage.getItem('lc_balance');
+    if (savedBalance) fBalance.value = savedBalance;
+
+    function fmt(n, dec) {
+      return n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    }
+
+    function calc() {
+      const balance = parseFloat(fBalance.value);
+      const risk    = parseFloat(fRisk.value);
+      const slPct   = parseFloat(fSl.value);
+
+      // Save balance whenever it changes
+      if (!isNaN(balance)) {
+        localStorage.setItem('lc_balance', fBalance.value);
+      }
+
+      if (isNaN(balance) || isNaN(risk) || isNaN(slPct) ||
+          balance <= 0 || risk <= 0 || slPct <= 0) {
+        outLev.textContent  = '—';
+        outPos.textContent  = '—';
+        outLoss.textContent = '—';
+        outLev.classList.add('empty');
+        return;
+      }
+
+      outLev.classList.remove('empty');
+
+      const slDecimal  = slPct / 100;
+      // Position size: risk covers stop loss move + round trip fees
+      const position   = risk / (slDecimal + TOTAL_FEE_RATE);
+      const leverage   = position / balance;
+      const fees       = position * TOTAL_FEE_RATE;
+      const maxLoss    = risk; // by definition
+
+      outLev.textContent  = fmt(leverage, 2) + 'x';
+      outPos.textContent  = fmt(position, 2) + ' USDT';
+      outLoss.textContent = fmt(maxLoss, 4) + ' USDT';
+    }
+
+    fBalance.addEventListener('input', calc);
+    fRisk.addEventListener('input', calc);
+    fSl.addEventListener('input', calc);
+
+    // Run once on load if balance was restored
+    calc();
+  </script>
+</body>
+</html>
